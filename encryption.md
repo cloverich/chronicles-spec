@@ -212,13 +212,23 @@ adds a plaintext `keyId` field naming the domain (or `library`).
   encrypted: there is no path that sends it back as plaintext. Plaintext
   copies come from export, or from a tool that holds the key. A new library
   is encrypted from the start, when sync is first turned on.
+- **A new recovery code** replaces a lost one without a new LK: a device
+  holding LK makes a new code and sends a new `keyring.library`, LK under the
+  new code's wrapping key, with the same fingerprint. Nothing else changes;
+  other devices adopt it as any keyring for their key. The device shows the
+  new code only once the server has accepted that keyring. If the server
+  refused it (another device's keyring won), or it couldn't be sent, the
+  device puts back the keyring it had and shows nothing. The old code stops
+  opening the synced copy, but an encrypted export keeps the keyring it was
+  sealed with, so the old code still opens it. It doesn't help when a code may
+  have leaked: whoever held it may already have LK.
 - **Removing the library from iCloud** deletes the zone and retires the
   keys: the device forgets its keyring, journal keys, and sync state, and
   removes LK from the keychain. Every other device sees the zone go and stops
   (sync.md); local libraries are untouched. Turning sync on again makes a new
   library under a new LK and recovery code. This is the reset for a sync
-  problem, a lost recovery code while a device still has the data, or a key
-  that may have leaked.
+  problem, a code or key that may have leaked, or a lost recovery code when
+  no device holds LK any more.
 
 ## Exports
 

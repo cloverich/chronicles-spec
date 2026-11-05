@@ -31,6 +31,9 @@ exist for the assistant:
   journals (`in:`) returns nothing.
 - Tags are counted over visible notes only.
 - An attachment is visible through a visible note whose content references it.
+  A write can add a reference only to an attachment already visible, and is
+  refused the same way whether or not that file exists elsewhere, so a write
+  can't reach or confirm a file outside the grant.
 
 An assistant never deletes notes, moves them between journals, changes
 journals, or touches settings, sync, or export. With `diagnostics` it can read

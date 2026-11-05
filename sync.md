@@ -103,6 +103,13 @@ After applying a received record with revision `r`, its sync state is
 `{revision: r, base: payload}`; the library holds either that record (now
 clean) or a merge of it with local changes (still pending, so it is sent).
 
+One record never costs the others. A record that doesn't parse is skipped and
+reported. A record that can't be applied for now, for any other reason (the
+disk, an editor racing the merge, a rule of an older app), keeps the sync state
+it had, is reported, and is kept and retried on later applies, its latest
+version only; the rest of the batch still applies. Transports don't deliver a
+record twice by themselves, so dropping it would lose the change here for good.
+
 ### Notes
 
 With local note `L`, received note `R` (revision `r`) and sync state `s`/`B`:
@@ -164,9 +171,14 @@ Store the bytes. If their hash doesn't match the record's ID, discard them.
 Turning sync off, erasing the library, and restoring a backup clear the sync
 state; the library itself is untouched. Turning sync on with a non-empty
 library is therefore a join: identical records match, records only on this
-device are sent, records that differ keep both (no base), and nothing is
-deleted. Restoring a backup on a synced device brings its notes back to every
+device are sent, records that differ merge as under [Notes](#notes) (against a
+shared version when the device holds one, otherwise keeping both), and nothing
+is deleted. Restoring a backup on a synced device brings its notes back to every
 device rather than being undone by the next sync.
+
+A device can also fetch everything again for its own reasons (a recovery code
+just entered, an update that reads more formats). That isn't a join: it keeps
+its deletes not yet sent, and they stay deleted.
 
 ## Vectors
 

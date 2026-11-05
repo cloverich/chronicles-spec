@@ -22,7 +22,9 @@ in the app makes the server's view the same everywhere.
 **Not covered:** the device itself while unlocked. The local library stays
 plaintext in phase E1, protected by the OS. Backups stay plaintext, since they
 are the person's own copies; an export is plaintext or, by choice, sealed
-with the library key ([Exports](#exports)).
+with the library key ([Exports](#exports)). Devices cache journal keys in the
+local database, and a backup leaves them out: a copy of the past shouldn't
+also read what the server receives from now on.
 
 ## What the server can see
 
@@ -195,6 +197,13 @@ adds a plaintext `keyId` field naming the domain (or `library`).
   `journal` (a journal record's `id`) must be the domain's journal. A record
   that fails to open is skipped, never applied. One whose key hasn't arrived
   waits until it does.
+- **A record a device can't read is left alone.** It is skipped and logged,
+  and the device doesn't send a replacement, for any kind of record: its
+  version on the server may be one only a later app can read. The exception is
+  a plaintext record in an encrypted library, which a sealed save may replace.
+- **Tombstones** have no payload to seal. An encrypted tombstone's `keyId` is
+  `library`, so a device that hasn't met the keyring still knows the record
+  belongs to an encrypted library.
 
 ## Turning it on, and joining
 
@@ -202,12 +211,26 @@ adds a plaintext `keyId` field naming the domain (or `library`).
   then every record is sent encrypted. Every other device sees the zone go,
   stops syncing (sync.md), and rejoins once it has LK. Deleting the zone, rather
   than overwriting records, leaves no plaintext versions behind.
+- **Setting up** a new library: a device that found the zone empty makes LK
+  and shows the recovery code, then checks again that the server has no
+  keyring, since it may have waited a long time. If it has one, this device
+  joins it and says that the code it showed opens nothing. Otherwise it sends
+  the keyring alone, and sends nothing else until the server has accepted it,
+  so if another device's keyring got there first, nothing is on the server
+  under this device's LK.
 - **Joining:** a device that finds a `keyring` whose fingerprint matches a key
   in its keychain uses it; otherwise it asks for the recovery code, and applies
   and sends nothing until it has it. A device never sends plaintext records to
   a zone that has a keyring: a joining device sends nothing until its first
   fetch has finished, and one that learns mid-fetch that the library is
   encrypted forgets what it applied and fetches again with the key.
+- **The keyring can arrive last.** It is the newest record after a new recovery
+  code, so a device can fetch sealed records first. It applies none of them and
+  sends nothing, and remembers that durably with the batch: the transport won't
+  deliver those records again by itself, so the keyring, whenever it comes, even
+  after a relaunch, makes the device fetch everything again. A keychain miss is
+  the same: records that arrived while the key was missing are fetched again
+  once it appears.
 - **No turning off.** Once encrypted, a library's synced copy stays
   encrypted: there is no path that sends it back as plaintext. Plaintext
   copies come from export, or from a tool that holds the key. A new library
@@ -218,17 +241,21 @@ adds a plaintext `keyId` field naming the domain (or `library`).
   other devices adopt it as any keyring for their key. The device shows the
   new code only once the server has accepted that keyring. If the server
   refused it (another device's keyring won), or it couldn't be sent, the
-  device puts back the keyring it had and shows nothing. The old code stops
-  opening the synced copy, but an encrypted export keeps the keyring it was
-  sealed with, so the old code still opens it. It doesn't help when a code may
-  have leaked: whoever held it may already have LK.
+  device puts back the keyring it had and shows nothing. The same holds if
+  the process ends first, so the way back is saved before the new keyring is;
+  and if a keyring the device gave up on turns out to have reached the server,
+  it sends the old one over it rather than adopt a code nobody saw. The old
+  code stops opening the synced copy, but an encrypted export keeps the keyring
+  it was sealed with, so the old code still opens it. It doesn't help when a
+  code may have leaked: whoever held it may already have LK.
 - **Removing the library from iCloud** deletes the zone and retires the
   keys: the device forgets its keyring, journal keys, and sync state, and
   removes LK from the keychain. Every other device sees the zone go and stops
   (sync.md); local libraries are untouched. Turning sync on again makes a new
   library under a new LK and recovery code. This is the reset for a sync
   problem, a code or key that may have leaked, or a lost recovery code when
-  no device holds LK any more.
+  no device holds LK any more. A device fetching a library it already belongs
+  to, which finds the zone gone, stops too: only a first join makes the zone.
 
 ## Exports
 

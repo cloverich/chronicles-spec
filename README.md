@@ -25,6 +25,7 @@ code; `scripts/` holds reference generators that need only Node.
 | [versions.md](versions.md)           | Note versions: past states, their parents, and restoring one      |
 | [encryption.md](encryption.md)       | End-to-end encryption of synced records: keys, envelope, records  |
 | [assistant.md](assistant.md)         | Tools an assistant may use over the library, and their scope      |
+| [backup.md](backup.md)               | Backup snapshots: layout, manifest, retention, and restore        |
 | `vectors/`                           | Golden inputs and expected outputs                                |
 
 ## Status
@@ -53,6 +54,7 @@ vectors/
   search/cases.json          search text and journals in → NoteQuery out (see search.md)
   encryption/cases.json      fixed keys and nonces → derived keys, HMACs, envelopes, streams
                              (node scripts/encryption-vectors.mjs writes it)
+  backup/manifest.schema.json  JSON Schema every backup manifest validates against
 ```
 
 An implementation passes a vector when:
@@ -93,3 +95,10 @@ UPDATE_VECTORS=1 yarn test:node
 
 then review the diff by hand. Vectors are excluded from prettier; never
 reformat them.
+
+## License
+
+The documents (`*.md`) are under [CC BY 4.0](LICENSE). The vectors (`vectors/`)
+and generators (`scripts/`) are under the [MIT License](LICENSE-MIT), so an
+implementation under any license can copy them into its own repository.
+© 2026 Christopher Loverich.

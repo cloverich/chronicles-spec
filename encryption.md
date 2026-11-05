@@ -75,7 +75,7 @@ key is used only through its derived keys, never directly:
 | Revision key          | JK            | `chronicles.v1 revision`                   |
 | Attachment name key   | JK            | `chronicles.v1 attachment-name`            |
 | Attachment stream key | JK            | `chronicles.v1 attachment-stream\|` + name |
-| Attachment file key   | JK            | `chronicles.v1 attachment-file \|` + name  |
+| Attachment file key   | JK            | `chronicles.v1 attachment-file\|` + name   |
 | Recovery wrapping key | recovery code | `chronicles.v1 recovery`                   |
 | Library export key    | LK            | `chronicles.v1 export`                     |
 | Export stream key     | export key    | `chronicles.v1 export-stream`              |
